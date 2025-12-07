@@ -17,6 +17,11 @@ void worker(int id, int iterations) {
     printf("Thread %d: Finished!\n", id);
 }
 
+// Wrappers for worker with fixed IDs so we can use plain function pointers
+void worker0() { worker(0, 3); }
+void worker1() { worker(1, 3); }
+void worker2() { worker(2, 3); }
+
 // A simple counter thread
 void counter_thread(const char* name, int count) {
     for (int i = 1; i <= count; ++i) {
@@ -25,6 +30,10 @@ void counter_thread(const char* name, int count) {
     }
 }
 
+// Wrapper functions for counter threads to use with spawn
+void counter_threadA() { counter_thread("Counter A", 5); }
+void counter_threadB() { counter_thread("Counter B", 4); }
+
 int main() {
     // Initialize the runtime
     runtime_init();
@@ -32,15 +41,13 @@ int main() {
     printf("Starting multiple threads example...\n");
     
     // Create several worker threads
-    for (int i = 0; i < 3; ++i) {
-        spawn([i]() { 
-            worker(i, 3); 
-        });
-    }
+    spawn(worker0);
+    spawn(worker1);
+    spawn(worker2);
     
-    // Create some counter threads
-    spawn([]() { counter_thread("Counter A", 5); });
-    spawn([]() { counter_thread("Counter B", 4); });
+    // Create some counter threads using fixed wrappers
+    spawn(counter_threadA);
+    spawn(counter_threadB);
     
     printf("All threads created, starting scheduler...\n");
     

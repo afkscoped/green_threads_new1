@@ -3,8 +3,10 @@
 #include "../util/assert.hpp"
 #include <cstdint>
 #include <deque>
+#include <atomic>
 
 class Thread;
+class ConditionVariable;
 
 class Mutex {
 public:
@@ -32,11 +34,13 @@ public:
 
 private:
     // The current owner thread (nullptr if unlocked)
-    Thread* owner_;
+    std::atomic<Thread*> owner_;
     
     // Queue of threads waiting for this mutex
     std::deque<Thread*> wait_queue_;
     
     // For debugging
     uint32_t lock_count_;
+    
+    friend class ConditionVariable;
 };

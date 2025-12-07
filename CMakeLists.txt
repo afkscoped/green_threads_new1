@@ -15,8 +15,12 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_library(green_threads
     src/core/thread.cpp
     src/core/scheduler.cpp
+    src/core/mutex.cpp
+    src/core/condition_variable.cpp
+    src/core/io_event.cpp
     src/runtime/runtime.cpp
     src/arch/x86_64/context.S
+    src/arch/x86_64/timer.cpp
 )
 
 target_include_directories(green_threads PUBLIC
@@ -27,7 +31,9 @@ target_include_directories(green_threads PUBLIC
 add_executable(example_basic examples/basic.cpp)
 add_executable(example_yield examples/yield_example.cpp)
 add_executable(example_multiple examples/multiple_threads.cpp)
+add_executable(example_http_server examples/http_server.cpp)
 
 target_link_libraries(example_basic PRIVATE green_threads)
 target_link_libraries(example_yield PRIVATE green_threads)
 target_link_libraries(example_multiple PRIVATE green_threads)
+target_link_libraries(example_http_server PRIVATE green_threads)

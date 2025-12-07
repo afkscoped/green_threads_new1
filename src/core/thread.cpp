@@ -19,15 +19,15 @@ Thread::Thread(EntryFunc entry, size_t stack_size)
     stack_ = std::aligned_alloc(page_size, stack_size_);
     ASSERT(stack_ != nullptr, "Failed to allocate stack");
     
+    // Initialize stack with a pattern for debugging (0xDEADBEEF)
+    std::memset(stack_, 0xDE, stack_size_);
+    
     // Assign a unique ID to this thread
     id_ = next_id_++;
     
-    // Initialize the context
+    // Initialize the context to start in our trampoline
     context_init(&context_, stack_, stack_size_, 
-                reinterpret_cast<void (*)()>(&Thread::thread_entry));
-    
-    // Initialize stack with a pattern for debugging (0xDEADBEEF)
-    std::memset(stack_, 0xDE, stack_size_);
+                reinterpret_cast<void (*)()>(&Thread::start_trampoline));
     
     // Set a default name based on the thread ID
     static char default_name[32];
@@ -58,6 +58,12 @@ Thread::~Thread() {
 
 /* static */ Thread* Thread::current() {
     return current_thread_;
+}
+
+/* static */ void Thread::start_trampoline() {
+    // Entry point used by the assembly trampoline: dispatch to thread_entry
+    Thread* self = Scheduler::current();
+    thread_entry(self);
 }
 
 /* static */ void Thread::thread_entry(Thread* self) {

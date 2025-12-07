@@ -4,6 +4,9 @@
 #include <functional>
 #include <cstdint>
 #include <string>
+#include <atomic>
+#include <vector>
+#include <cstring>
 
 class Thread {
 public:
@@ -28,11 +31,23 @@ public:
     
     // Thread entry point wrapper
     static void thread_entry(Thread* self);
+    static void start_trampoline();
     
     // Thread identification
     uint64_t id() const { return id_; }
-    const char* name() const { return name_.c_str(); }
-    void set_name(const char* name) { name_ = name; }
+    const char* name() const { return name_; }
+    void set_name(const char* name) { 
+        if (name) {
+            size_t len = strlen(name);
+            if (len > 0) {
+                name_ = strdup(name);
+            } else {
+                name_ = nullptr;
+            }
+        } else {
+            name_ = nullptr;
+        }
+    }
     
     // State management
     State state() const { return state_; }
@@ -68,7 +83,7 @@ private:
     EntryFunc entry_;
     State state_ = State::READY;
     uint64_t id_;
-    const char* name_ = nullptr;
+    char* name_ = nullptr;
     
     // Thread ID counter
     static std::atomic<uint64_t> next_id_;

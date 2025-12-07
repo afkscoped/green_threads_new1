@@ -10,6 +10,7 @@
 #include <functional>
 #include <atomic>
 #include <csignal>
+#include <mutex>
 
 class Scheduler {
 public:
@@ -81,30 +82,16 @@ private:
     // Update thread statistics
     static void update_thread_stats(Thread* thread);
     
-    // Thread-local pointer to the current thread
+    // Thread state
     static thread_local Thread* current_;
-    
-    // Main thread (special thread that runs when no other threads are ready)
     static Thread* main_thread_;
-    
-    // Ready queue for threads that are ready to run
     static std::deque<Thread*> ready_queue_;
     
-    // Sleeping threads (min-heap based on wakeup time)
-    struct SleepEntry {
-        std::chrono::steady_clock::time_point wakeup_time;
-        Thread* thread;
-        
-        bool operator>(const SleepEntry& other) const {
-            return wakeup_time > other.wakeup_time;
-        }
-    };
-    static std::priority_queue<SleepEntry, std::vector<SleepEntry>, std::greater<>> sleeping_threads_;
-    
-    // All threads (for cleanup)
+    // Thread management
     static std::vector<Thread*> all_threads_;
+    static std::mutex threads_mutex_;
     
-    // Scheduler statistics
+    // Statistics
     static Stats stats_;
     
     // Preemption control
@@ -112,4 +99,14 @@ private:
     static std::atomic<bool> in_scheduler_;
     static std::chrono::milliseconds timeslice_;
     static thread_local int preemption_disabled_count_;
+    
+    // Sleep entry for sleeping threads
+    struct SleepEntry {
+        std::chrono::steady_clock::time_point wakeup_time;
+        Thread* thread;
+        bool operator>(const SleepEntry& other) const { 
+            return wakeup_time > other.wakeup_time; 
+        }
+    };
+    static std::priority_queue<SleepEntry, std::vector<SleepEntry>, std::greater<>> sleeping_threads_;
 };

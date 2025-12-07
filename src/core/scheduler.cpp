@@ -78,20 +78,6 @@ thread_local int Scheduler::preemption_disabled_count_{0};
     // Check for sleeping threads that should wake up
     check_sleeping_threads();
     
-    // Clean up finished threads
-    {
-        std::lock_guard<std::mutex> lock(threads_mutex_);
-        auto it = std::remove_if(all_threads_.begin(), all_threads_.end(),
-            [](Thread* t) {
-                if (t->state() == Thread::State::FINISHED) {
-                    delete t;
-                    return true;
-                }
-                return false;
-            });
-        all_threads_.erase(it, all_threads_.end());
-    }
-    
     // Look for the next runnable thread
     while (!ready_queue_.empty()) {
         Thread* thread = ready_queue_.front();

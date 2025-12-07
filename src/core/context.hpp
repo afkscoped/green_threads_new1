@@ -3,20 +3,21 @@
 #include <cstdint>
 #include <cstddef>
 
-// Platform-specific context structure
+// Platform-specific context structure (must match context.S layout)
 struct Context {
-    void* rip;      // Instruction pointer
-    void* rsp;      // Stack pointer
-    void* rbp;      // Base pointer
-    void* rbx;      // Callee-saved registers
-    void* r12;
-    void* r13;
-    void* r14;
     void* r15;
+    void* r14;
+    void* r13;
+    void* r12;
+    void* rbx;      // Callee-saved registers
+    void* rbp;      // Base pointer
+    void* rsp;      // Stack pointer
+    void* rip;      // Instruction pointer
 };
 
 // Initialize a context to run the given function with the given stack
-void context_init(Context* ctx, void* stack, size_t stack_size, void (*entry)());
+extern "C" void context_init(Context* ctx, void* stack, size_t stack_size, void (*entry)());
 
-// Context switching
+// Context operations
 extern "C" void context_switch(Context* old_ctx, const Context* new_ctx);
+extern "C" void context_save(Context* ctx);
