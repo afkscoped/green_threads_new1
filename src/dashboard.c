@@ -92,18 +92,30 @@ static void handle_threads(int fd) {
     // Debug print
     // fprintf(stderr, "[DEBUG] Processing Thread %lu\n", curr->id);
 
-    offset += snprintf(json_buf + offset, JSON_BUF_SIZE - offset,
-                       "{\"id\":%lu,\"tickets\":%d,\"pass\":%lu,\"state\":%d,"
-                       "\"stride\":%lu,\"stack_used\":%zu,\"waiting_fd\":%d,"
-                       "\"wake_time\":%lu}",
-                       (unsigned long)curr->id, (int)curr->tickets,
-                       (unsigned long)curr->pass, curr->state,
-                       (unsigned long)curr->stride, ss.stack_used,
-                       curr->waiting_fd, (unsigned long)curr->wake_time_ms);
+    // Correct snprintf usage to avoid overflow
+    int remaining = JSON_BUF_SIZE - offset - 2; // reserve for "]" and null
+    if (remaining <= 0)
+      break;
+
+    int wrote = snprintf(json_buf + offset, remaining,
+                         "{\"id\":%lu,\"tickets\":%d,\"pass\":%lu,\"state\":%d,"
+                         "\"stride\":%lu,\"stack_used\":%zu,\"waiting_fd\":%d,"
+                         "\"wake_time\":%lu}",
+                         (unsigned long)curr->id, (int)curr->tickets,
+                         (unsigned long)curr->pass, curr->state,
+                         (unsigned long)curr->stride, ss.stack_used,
+                         curr->waiting_fd, (unsigned long)curr->wake_time_ms);
+
+    if (wrote < 0 || wrote >= remaining) {
+      // Truncated or error
+      break;
+    }
+    offset += wrote;
 
     curr = curr->global_next;
     items++;
 
+    // Check global limit
     if (offset >= JSON_BUF_SIZE - 200)
       break;
   }

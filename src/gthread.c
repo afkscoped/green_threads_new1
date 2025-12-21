@@ -13,7 +13,12 @@ extern void gthread_switch(gthread_ctx_t *new_ctx, gthread_ctx_t *old_ctx);
 
 static uint64_t next_tid = 1;
 
+#include <signal.h>
+
 void gthread_init(void) {
+  // Ignore SIGPIPE to prevent crash on closed sockets
+  signal(SIGPIPE, SIG_IGN);
+
   monitor_init();
   // Initialize main thread
   g_main_thread.id = 0;

@@ -13,7 +13,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-
 #define PORT 8080
 #define JSON_BUF_SIZE 131072
 
@@ -70,7 +69,7 @@ void io_task(void *arg) {
 
 // --- HTTP Server ---
 
-static char json_buf[JSON_BUF_SIZE];
+// static char json_buf[JSON_BUF_SIZE]; // Removed to prevent race condition
 
 // Helper to serve file
 void serve_file(int client_fd, const char *path, const char *content_type) {
@@ -121,6 +120,11 @@ void handle_client(void *arg) {
 
   // Simple routing
   if (strncmp(buffer, "GET /status ", 12) == 0) {
+    char *json_buf = malloc(JSON_BUF_SIZE);
+    if (!json_buf) {
+      close(client_fd);
+      return;
+    }
     int len = monitor_build_json(json_buf, JSON_BUF_SIZE);
     if (len < 0)
       len = 0;
@@ -134,6 +138,7 @@ void handle_client(void *arg) {
 
     gthread_write(client_fd, header, strlen(header));
     gthread_write(client_fd, json_buf, len);
+    free(json_buf);
 
   } else if (strncmp(buffer, "GET /style.css ", 15) == 0) {
     serve_file(client_fd, "style.css", "text/css");
