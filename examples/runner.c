@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-
 void print_menu(void) {
   printf("\n=== Green Threads Demo Runner ===\n");
   printf("1. Basic Threads\n");
@@ -48,6 +47,10 @@ int main(void) {
       break;
     case 8:
       system("./build/matrix_mul");
+      break;
+    case 9:
+      printf("Starting Web Dashboard... Press Ctrl+C to stop.\n");
+      system("./build/web_dashboard");
       break;
     case 0:
       exit(0);

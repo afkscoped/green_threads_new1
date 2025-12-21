@@ -1,9 +1,11 @@
 #include "gthread.h"
+#include "monitor.h"
 #include "scheduler.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+
 
 #define DEFAULT_STACK_SIZE (64 * 1024)
 
@@ -13,6 +15,7 @@ extern void gthread_switch(gthread_ctx_t *new_ctx, gthread_ctx_t *old_ctx);
 static uint64_t next_tid = 1;
 
 void gthread_init(void) {
+  monitor_init();
   // Initialize main thread
   g_main_thread.id = 0;
   g_main_thread.state = GTHREAD_RUNNING;
@@ -20,6 +23,8 @@ void gthread_init(void) {
   g_main_thread.tickets = 10;
   g_main_thread.stride = 10000 / 10;
   g_main_thread.pass = 0;
+  g_main_thread.monitor_id = monitor_register("MAIN");
+  monitor_update_state(g_main_thread.monitor_id, TASK_RUNNABLE);
   g_current_thread = &g_main_thread;
 }
 
@@ -47,6 +52,10 @@ int gthread_create(gthread_t **t, void (*fn)(void *), void *arg) {
   thread->pass = 0;
   thread->stride = 10000; // arbitrary constant / tickets
 
+  // Monitor
+  thread->monitor_id = monitor_register("GTHREAD");
+  monitor_update_state(thread->monitor_id, TASK_RUNNABLE);
+
   // Setup Context
   // Stack grows down. Top is stack + size.
   // We need 16-byte alignment for ABI.
@@ -70,12 +79,14 @@ int gthread_create(gthread_t **t, void (*fn)(void *), void *arg) {
 void gthread_exit(void) {
   gthread_t *cur = g_current_thread;
   cur->state = GTHREAD_TERMINATED;
+  monitor_mark_done(cur->monitor_id);
 
   // Wake up joining threads
   gthread_t *waiter = cur->join_queue;
   while (waiter) {
     gthread_t *next = waiter->next;
     scheduler_enqueue(waiter);
+    monitor_update_state(waiter->monitor_id, TASK_RUNNABLE);
     waiter = next;
   }
   cur->join_queue = NULL;
@@ -103,11 +114,14 @@ int gthread_join(gthread_t *t, void **retval) {
   // Add self to t's join queue
   gthread_t *cur = g_current_thread;
   cur->state = GTHREAD_BLOCKED;
+  monitor_update_state(cur->monitor_id, TASK_WAITING);
 
   cur->next = t->join_queue;
   t->join_queue = cur;
 
   scheduler_schedule();
+
+  monitor_update_state(cur->monitor_id, TASK_RUNNABLE);
 
   if (retval)
     *retval = t->retval;
@@ -124,6 +138,13 @@ static uint64_t get_time_ms(void) {
 void gthread_sleep(uint64_t ms) {
   gthread_t *cur = g_current_thread;
   cur->wake_time_ms = get_time_ms() + ms;
+
+  monitor_update_state(cur->monitor_id, TASK_SLEEPING);
+  monitor_set_wake(cur->monitor_id, cur->wake_time_ms);
+
   scheduler_enqueue_sleep(cur);
   scheduler_schedule();
+
+  monitor_update_state(cur->monitor_id, TASK_RUNNABLE);
+  monitor_set_wake(cur->monitor_id, -1);
 }

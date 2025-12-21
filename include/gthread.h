@@ -50,6 +50,9 @@ struct gthread {
 
   // Phase 6: Sleep
   uint64_t wake_time_ms;
+
+  // Phase 11: Monitor
+  int monitor_id;
 };
 
 /* API */

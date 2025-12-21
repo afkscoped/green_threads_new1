@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green Threads Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="container">
+        <h1>Green Threads Dashboard</h1>
+
+        <div class="controls">
+            <button onclick="spawn('cpu')">Spawn CPU Task</button>
+            <button onclick="spawn('sleep')">Spawn Sleep Task</button>
+            <button onclick="spawn('io')">Spawn IO Task</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Type</th>
+                    <th>State</th>
+                    <th>Progress / Info</th>
+                </tr>
+            </thead>
+            <tbody id="task-table">
+                <!-- Rows will be injected here -->
+            </tbody>
+        </table>
+    </div>
+    <script src="dashboard.js"></script>
+</body>
+
+</html>
