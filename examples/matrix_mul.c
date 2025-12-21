@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-
 // Parameters
 #define SIZE 200
 #define NUM_THREADS 4
@@ -115,6 +114,14 @@ int main(void) {
     printf("Verification SUCCESS!\n");
   } else {
     printf("Verification FAILED!\n");
+  }
+
+  printf("\nResult Preview (10x10):\n");
+  for (int i = 0; i < 10; i++) {
+    for (int j = 0; j < 10; j++) {
+      printf("%4d ", C[i][j]);
+    }
+    printf("\n");
   }
 
   return 0;

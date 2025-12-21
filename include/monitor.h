@@ -13,10 +13,11 @@ typedef enum {
 typedef struct {
   int id; // small unique id
   task_state_t state;
-  char type[32]; // "CPU", "TIMER", "IO", "GTHREAD"
-  int progress;  // 0-100 for CPU tasks (optional)
-  long wake_ms;  // if sleeping, when it will wake (epoch ms) or -1
-  int wait_fd;   // if waiting on fd
+  char type[32];  // "CPU", "TIMER", "IO", "GTHREAD"
+  int progress;   // 0-100 for CPU tasks (optional)
+  long wake_ms;   // if sleeping, when it will wake (epoch ms) or -1
+  int wait_fd;    // if waiting on fd
+  char extra[64]; // Generic debug info
 } monitor_task_t;
 
 /* library init */
@@ -30,6 +31,7 @@ void monitor_update_state(int id, task_state_t state);
 void monitor_update_progress(int id, int progress);
 void monitor_set_wake(int id, long wake_ms);
 void monitor_set_waitfd(int id, int fd);
+void monitor_set_extra(int id, const char *msg);
 
 /* mark done */
 void monitor_mark_done(int id);

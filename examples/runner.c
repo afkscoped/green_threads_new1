@@ -12,6 +12,7 @@ void print_menu(void) {
   printf("6. IO Integration (Echo)\n");
   printf("7. HTTP Server (Port 8080)\n");
   printf("8. Parallel Matrix Multiplication\n");
+  printf("9. Web Dashboard (Port 8080)\n");
   printf("0. Exit\n");
   printf("Select demo: ");
 }

@@ -76,6 +76,16 @@ void monitor_set_waitfd(int id, int fd) {
   gmutex_unlock(&monitor_mutex);
 }
 
+void monitor_set_extra(int id, const char *msg) {
+  gmutex_lock(&monitor_mutex);
+  int idx = find_task_index(id);
+  if (idx >= 0) {
+    strncpy(tasks[idx].extra, msg, sizeof(tasks[idx].extra) - 1);
+    tasks[idx].extra[sizeof(tasks[idx].extra) - 1] = '\0';
+  }
+  gmutex_unlock(&monitor_mutex);
+}
+
 void monitor_mark_done(int id) {
   gmutex_lock(&monitor_mutex);
   int idx = find_task_index(id);
@@ -110,12 +120,12 @@ int monitor_build_json(char *buf, int buflen) {
       if (remaining <= 0)
         break;
 
-      int wrote =
-          snprintf(buf + offset, remaining,
-                   "{\"id\":%d,\"state\":%d,\"type\":\"%s\",\"progress\":%d,"
-                   "\"wake_ms\":%ld,\"wait_fd\":%d}",
-                   tasks[i].id, tasks[i].state, tasks[i].type,
-                   tasks[i].progress, tasks[i].wake_ms, tasks[i].wait_fd);
+      int wrote = snprintf(
+          buf + offset, remaining,
+          "{\"id\":%d,\"state\":%d,\"type\":\"%s\",\"progress\":%d,"
+          "\"wake_ms\":%ld,\"wait_fd\":%d,\"extra\":\"%s\"}",
+          tasks[i].id, tasks[i].state, tasks[i].type, tasks[i].progress,
+          tasks[i].wake_ms, tasks[i].wait_fd, tasks[i].extra);
 
       if (wrote < 0 || wrote >= remaining) {
         break;

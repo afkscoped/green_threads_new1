@@ -37,6 +37,11 @@ function updateTable() {
                     info = `Waiting on FD: ${task.wait_fd}`;
                 }
 
+                if (task.extra && task.extra !== "") {
+                    if (info !== "") info += " | ";
+                    info += `<span style="color:#666;font-size:0.9em;">${task.extra}</span>`;
+                }
+
                 tr.innerHTML = `
                     <td>${task.id}</td>
                     <td>${task.type}</td>
