@@ -1,120 +1,74 @@
-# Userspace Green Thread Runtime
+# Green Threads in C
 
-A high-performance, cooperative userspace threading library implemented in C++17 for Linux x86_64, featuring preemptive scheduling, synchronization primitives, I/O event notification, and task parallelism.
+A lightweight, user-space threading library implementation from scratch in C for Linux/x86_64. This project demonstrates core operating system concepts including context switching (assembly), cooperative scheduling, synchronization primitives, and asynchronous I/O.
 
 ## Features
 
-- **Lightweight Threads**: Ultra-fast context switching with minimal overhead
-- **Preemptive Scheduling**: Time-sliced scheduling with configurable timeslices
-- **Synchronization**: Mutexes and condition variables for thread coordination
-- **I/O Event Notification**: Non-blocking I/O with efficient event loop
-- **Task Parallelism**: Work-stealing task scheduler for parallel execution
-- **Thread-Local Storage**: Per-thread storage support
-- **Clean Shutdown**: Graceful thread cleanup and resource management
-
-## Building
-
-```bash
-# Clone the repository
-git clone https://github.com/your-username/green_threads.git
-cd green_threads
-
-# Configure and build
-mkdir -p build && cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j$(nproc)
-```
-
-## Examples
-
-### Basic Threading
-```bash
-./bin/basic_example
-```
-
-### Synchronization Primitives
-```bash
-./bin/sync_example
-```
-
-### HTTP Server (I/O Event Loop)
-```bash
-./bin/http_server
-# Access at http://localhost:8080
-```
-
-### Parallel Computation
-```bash
-./bin/parallel_compute
-```
+- **User-Space Context Switching**: Implemented using x86_64 assembly (`gthread_switch`).
+- **Stride Scheduling**: Deterministic proportional-share scheduler ensuring fairness (no starvation).
+- **Synchronization**: Mutexes (`gmutex_t`) and Condition Variables (`gcond_t`).
+- **Cooperative Multitasking**: Explicit `gthread_yield()` to switch contexts.
+- **Sleep & Timers**: Efficient sleep implementation (`gthread_sleep`) with priority-queue based timer management.
+- **Async I/O**: `poll()`-based event loop integration for non-blocking I/O operations (`read`, `write`, `accept`).
+- **Dynamic Stack Management**: Heap-allocated stacks with lazy zombie thread reclamation.
 
 ## Project Structure
 
-### Core Components
-- **Thread**: Lightweight user-space threads
-- **Scheduler**: Preemptive, priority-based scheduling
-- **Mutex/Condition Variables**: Thread synchronization
-- **I/O Event Loop**: Non-blocking I/O with epoll
-- **Task System**: Work-stealing task scheduler
-
-### Directory Layout
-- `src/`: Source code
-  - `core/`: Core threading and synchronization
-  - `arch/x86_64/`: Architecture-specific code
-  - `util/`: Utility functions and helpers
-- `examples/`: Example programs
-- `tests/`: Test suite
-
-## Implementation Phases
-
-### Phase 1: Basic Threading
-- Stack allocation and context switching
-- Simple cooperative scheduling
-
-### Phase 2: Thread Management
-- Multiple thread support
-- Thread states and cleanup
-- Thread-local storage
-
-### Phase 3: Preemptive Scheduling
-- Timer interrupts
-- Time-sliced scheduling
-- Priority-based scheduling
-
-### Phase 4: Synchronization
-- Mutex implementation
-- Condition variables
-- Thread-safe data structures
-
-### Phase 5: I/O Event Notification
-- Non-blocking I/O
-- Event loop with epoll
-- HTTP server example
-
-### Phase 6: Task Parallelism
-- Work-stealing task scheduler
-- Parallel algorithms
-- Task dependencies
-
-## Performance
-
 ```
-Thread Creation:    ~0.5μs per thread
-Context Switch:     ~50ns
-Memory per Thread:  8KB (minimum stack)
+├── include/
+│   ├── gthread.h       # Public API (Create, Yield, Join, Sleep)
+│   ├── scheduler.h     # Scheduler & Stride implementation
+│   ├── sync.h          # Mutex & Condition Variables
+│   └── io.h            # Async I/O Wrappers
+├── src/
+│   ├── gthread.c       # Core thread management
+│   ├── context.S       # Assembly context switch
+│   ├── scheduler.c     # Scheduler logic (Min-heap ready queue)
+│   ├── sync.c          # Synchronization primitives
+│   └── io.c            # I/O event loop integration
+├── examples/
+│   ├── basic_threads.c # Simple create/join
+│   ├── stride_test.c   # Scheduler fairness demonstration
+│   ├── stack_test.c    # Recursion & stack usage
+│   ├── mutex_test.c    # Producer-Consumer problem
+│   ├── sleep_test.c    # Sleep/Wakeup timing
+│   ├── io_test.c       # Async IO Echo client/server
+│   ├── http_server.c   # Single-threaded async HTTP server
+│   ├── matrix_mul.c    # Parallel matrix multiplication
+│   └── runner.c        # Interactive launcher for all demos
+└── Makefile
 ```
+
+## Building and Running
+
+### Prerequisites
+- GCC
+- Make
+- Linux x86_64 environment (or WSL)
+
+### Build
+```bash
+make
+```
+
+### Run Demos
+Use the interactive runner to explore all features:
+```bash
+./build/runner
+```
+
+Or run individual examples:
+```bash
+./build/http_server
+# In another terminal: curl localhost:8080
+```
+
+## Key Concepts Demonstrated
+
+1.  **Context Switching**: Saving/Restoring `rbx`, `rsp`, `rbp`, `r12-r15` registers.
+2.  **Scheduling**: Assigning 'tickets' to threads and picking the one with the lowest 'pass' value.
+3.  **Green Threads vs OS Threads**: Managed entirely in user space (many green threads -> 1 OS thread).
+4.  **Event Loop**: Integrating CPU-bound tasks with I/O-bound tasks in a single OS thread.
 
 ## License
-
-MIT License - See [LICENSE](LICENSE) for details.
-
-## Contributing
-
-Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-## TODO
-
-- [ ] Add more examples
-- [ ] Improve documentation
-- [ ] Add more tests
-- [ ] Support more platforms
+MIT
