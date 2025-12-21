@@ -87,24 +87,17 @@ static void handle_threads(int fd) {
     }
     first = 0;
 
-    stack_stats_t ss = runtime_get_stack_stats(curr->id);
-
-    // Debug print
-    // fprintf(stderr, "[DEBUG] Processing Thread %lu\n", curr->id);
+    // Simplified loop - Stability First
+    // Reverted "5 panel features" as requested by user
 
     // Correct snprintf usage to avoid overflow
     int remaining = JSON_BUF_SIZE - offset - 2; // reserve for "]" and null
     if (remaining <= 0)
       break;
 
-    int wrote = snprintf(json_buf + offset, remaining,
-                         "{\"id\":%lu,\"tickets\":%d,\"pass\":%lu,\"state\":%d,"
-                         "\"stride\":%lu,\"stack_used\":%zu,\"waiting_fd\":%d,"
-                         "\"wake_time\":%lu}",
-                         (unsigned long)curr->id, (int)curr->tickets,
-                         (unsigned long)curr->pass, curr->state,
-                         (unsigned long)curr->stride, ss.stack_used,
-                         curr->waiting_fd, (unsigned long)curr->wake_time_ms);
+    int wrote =
+        snprintf(json_buf + offset, remaining, "{\"id\":%lu,\"state\":%d}",
+                 (unsigned long)curr->id, curr->state);
 
     if (wrote < 0 || wrote >= remaining) {
       // Truncated or error
