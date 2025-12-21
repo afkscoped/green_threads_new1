@@ -96,7 +96,7 @@ static void handle_threads(int fd) {
                        "{\"id\":%lu,\"tickets\":%d,\"pass\":%lu,\"state\":%d,"
                        "\"stride\":%lu,\"stack_used\":%zu,\"waiting_fd\":%d,"
                        "\"wake_time\":%lu}",
-                       (unsigned long)curr->id, curr->tickets,
+                       (unsigned long)curr->id, (int)curr->tickets,
                        (unsigned long)curr->pass, curr->state,
                        (unsigned long)curr->stride, ss.stack_used,
                        curr->waiting_fd, (unsigned long)curr->wake_time_ms);

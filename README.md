@@ -1,117 +1,141 @@
-# GreenThreads: User-Space Threading in C
+# Green Threads from Scratch
 
-A lightweight, from-scratch implementation of user-space threads (Green Threads) in C for Linux/x86_64. This project demonstrates core OS concepts including assembly-level context switching, cooperative scheduling, synchronization types, async I/O with event loops, and interactive web visualization.
+A fully functional, educational userspace threading library implemented in C from the ground up, featuring advanced scheduling, synchronization, async I/O, and a real-time web dashboard.
 
-## Features
+## 🚀 Features
 
-- **Micro-Kernel Architecture**: Minimal core (~200 LOC assembly/C) handling context switches.
-- **Stride Scheduler**: Deterministic, token-based scheduling ensuring fairness (no starvation).
-- **Async I/O System**: Non-blocking `read`/`write` integrated with `poll()` event loop.
-- **Synchronization**: Hand-written Mutexes (`gmutex_t`) and Condition Variables (`gcond_t`).
-- **Web Dashboard**: Real-time thread visualization via an embedded HTTP server.
-- **Zero External Runtime**: Depends only on `libc` and standard syscalls.
+*   **Userspace Context Switching**: Custom assembly implementation for switching execution contexts (stacks & registers) without kernel involvement.
+*   **M:1 Threading Model**: Maps multiple green threads to a single OS thread.
+*   **Advanced Scheduler**:
+    *   **Stride Scheduling**: Proportional CPU sharing using "tickets".
+    *   **Priority Queue**: Efficient O(log n) task selection.
+    *   **Idle Task**: Handles CPU idle states properly.
+*   **Synchronization Primitives**:
+    *   **Mutexes**: Protecting critical sections with blocking wait queues (no busy waiting).
+    *   **Condition Variables**: Wait and Signal mechanisms properly integrated with the scheduler.
+*   **Asynchronous I/O**:
+    *   Non-blocking system call wrappers (`read`, `write`, `accept`, `sleep`).
+    *   `poll()`-based event loop woven directly into the scheduler.
+    *   No blocking syscalls allowed!
+*   **Full Networking Stack**:
+    *   Green-threaded HTTP Server.
+    *   Handle hundreds of concurrent connections.
+*   **Parallel Computing Demos**:
+    *   Matrix Multiplication, Merge Sort, Prime Sieve.
+*   **📊 Real-Time Web Dashboard (Port 9090)**:
+    *   Visualizes thread states (RUNNING, READY, BLOCKED, SLEEPING).
+    *   **Stride Panel**: Adjust tickets dynamically and watch CPU share change.
+    *   **Stack Panel**: Stack usage visualization bars.
+    *   **Sync Panel**: See threads waiting on mutexes in real-time.
+    *   **I/O Panel**: Monitor file descriptors blocking threads.
 
-## Quick Start
+---
 
-### 1. Requirements
+## 🛠️ Build & Run
 
-- **OS**: Linux (x86_64) or Windows (WSL2/MinGW).
-- **Tools**: `gcc`, `make`.
+### Prerequisites
+*   Linux or WSL (Windows Subsystem for Linux).
+*   GCC Compiler.
+*   Make.
+*   Curl (for testing).
 
-### 2. Clone
+### One-Step Build & Run
+The project includes an interactive runner that builds everything and offers a menu.
 
 ```bash
-git clone https://github.com/afkscoped/green_threads.git
-cd green_threads
+make run
 ```
 
-### 3. Build
-
-Compile all core libraries and examples:
+### Manual Build
 ```bash
+make clean
 make
 ```
 
-### 4. Run & Test
+---
 
-Use the interactive runner to verify all systems:
-```bash
-./build/runner
-```
+## 📖 Usage Guide & Demos
 
-This launches a menu:
-```text
-=== Green Threads Demo Runner ===
-1. Basic Threads          (Create/Join)
-2. Stride Scheduling      (Fairness demo)
-3. Stack Management       (Recursion tests)
-4. Synchronization        (Mutex/CondVars)
-5. Sleep/Timers           (Efficient wait)
-6. IO Integration         (Async Socket Echo)
-7. HTTP Server            (Single-threaded Async Server)
-8. Matrix Multiplication  (Parallel Compute)
-9. Web Dashboard          (Real-time Visualizer)
-0. Exit
-```
+Run `./build/runner` (or `make run`) to see the menu. Here are the key demos:
+
+### 1. **Basic Threads** (Option 1)
+Simple proof-of-concept launching threads that yield to each other.
+
+### 2. **Interactive Stride Scheduler** (Option 2) - *Dashboard Enabled*
+*   **What it does**: Demonstrates proportional alignment of CPU time.
+*   **Input**: Asks for number of threads (e.g., 5).
+*   **Dashboard**: Open [http://localhost:9090](http://localhost:9090). Modify tickets to see frequency of execution change.
+*   **Phase**: 13 & 14.
+
+### 3. **Stack Overflow Test** (Option 3) - *Dashboard Enabled*
+*   **What it does**: Recursive function consuming stack memory.
+*   **Input**: Recursion depth (e.g., 500).
+*   **Dashboard**: Watch the stack bars fill up and turn red in the "Stack Management" panel.
+*   **Phase**: 14.
+
+### 4. **Process Synchronization** (Option 4) - *Dashboard Enabled*
+*   **What it does**: Threads contending for a single Mutex lock.
+*   **Input**: Number of threads (e.g., 4).
+*   **Dashboard**: Watch threads turn **BLOCKED (Red Border)** in the "Synchronization" panel while waiting for the lock.
+
+### 5. **Sleep & Timers** (Option 5) - *Dashboard Enabled*
+*   **What it does**: Threads sleeping for random durations.
+*   **Dashboard**: See threads in "Sleep & Timers" list with wake timestamps.
+
+### 6. **Async I/O Echo Server** (Option 6) - *Dashboard Enabled*
+*   **What it does**: Starts an echo server on a high port.
+*   **Dashboard**: Connect to the echo server (e.g., `nc localhost 8080`) and see the handling thread appear in "I/O Integration" blocked on `read()`.
+
+### 10. **Standalone Advanced Dashboard** (Option 10)
+Run just the dashboard server on port 9090. Useful if you want to run other tests manually.
 
 ---
 
-## Implementation Phases
+## 🏗️ Development Phases Implementation History
 
-This project was built in distinct phases, each adding layer of complexity:
+This project was built in sequential phases:
 
-### Phase 1: Core Context Switching
-- **Goal**: Switch between two functions without returning.
-- **Tech**: x86_64 Assembly (`src/context.S`) saving `rbx`, `rsp`, `rbp`, `r12-r15`.
-- **Demo**: `examples/basic_threads`
-
-### Phase 2: Thread Management
-- **Goal**: Dynamic thread creation/destruction.
-- **Tech**: `malloc` for stacks, `struct gthread` for metadata (State: NEW, RUNNING, DONE).
-
-### Phase 3: Cooperative Scheduling
-- **Goal**: Support `yield()` and fairness.
-- **Tech**: **Stride Scheduling** algorithm. Threads have "passes" and "stride"; lowest pass runs next.
-
-### Phase 4: Synchronization
-- **Goal**: Prevent race conditions.
-- **Tech**: `gmutex_t` using atomic flags and spin/yield loops; `gcond_t` for signaling.
-- **Demo**: `examples/mutex_test` (Producer-Consumer).
-
-### Phase 5: Timers & Sleep
-- **Goal**: Non-blocking sleep.
-- **Tech**: Priority queue (Min-Heap) of sleeping threads. Scheduler checks heap top O(1) before running tasks.
-- **Demo**: `examples/sleep_test`.
-
-### Phase 6-7: Stack Safety & Optimization
-- **Goal**: Handle stack overflow/growth.
-- **Tech**: Guard pages (mprotect) and dynamic stack sizing (simulated).
-
-### Phase 8-9: Async I/O & Networking
-- **Goal**: Handle network IO without blocking the whole process.
-- **Tech**: `poll()` integration. `gthread_read/write` hooks that yield if `EAGAIN` is returned and register FD with scheduler.
-- **Demo**: `examples/http_server`.
-
-### Phase 10: Matrix Multiplication (Parallelism)
-- **Goal**: Demonstrate CPU-bound concurrency.
-- **Tech**: Splitting large matrix calc into chunks, processed by worker threads.
-- **Demo**: `examples/matrix_mul`.
-
-### Phase 11: Web Dashboard (Visualization)
-- **Goal**: Visualize the runtime state.
-- **Tech**: Embedded single-threaded HTTP server serving a lightweight HTML/JS frontend. Polls internal `monitor` API for thread states.
-- **Demo**: `examples/web_dashboard`.
+*   **Phase 1: Core System**: Defined `gthread_t`, stack allocation, and main loop.
+*   **Phase 2: Context Switching**: Added assembly (`trampoline.S`) for `switch` and `yield`.
+*   **Phase 3: Scheduling**: Implemented Stride Scheduler (with Priority Queue).
+*   **Phase 4: Stack Management**: Dynamic stack allocation and safety guards.
+*   **Phase 5: Synchronization**: Built Mutexes (`gmutex`) and Condition Variables (`gcond`).
+*   **Phase 6: Timers**: Added `gthread_sleep` and efficient checking.
+*   **Phase 7: Async I/O**: Integrated `poll()` into the scheduler for non-blocking operations.
+*   **Phase 8: HTTP Server**: Built a green-threaded web server.
+*   **Phase 9: Compute Demos**: Parallel Matrix Mul, Merge Sort.
+*   **Phase 10-12**: Improvements, Linting, Documentation.
+*   **Phase 13-16: Advanced Dashboard & Interactivity**:
+    *   Built `src/dashboard.c` (JSON API).
+    *   Created modern Web UI (HTML/JS/CSS).
+    *   Made demos interactive (`scanf`).
+    *   Fixed critical Segfaults (Thread safety, Race conditions).
 
 ---
 
-## Web Dashboard Usage
+## ✅ Verification Steps
 
-1. Select **Option 9** in the runner or run `./build/web_dashboard`.
-2. Open [http://localhost:8080](http://localhost:8080).
-3. Use the **Spawn** buttons to generate load.
-4. **Exit**: Press `Ctrl+C` in the terminal to stop the server.
+To manually verify the system behaves correctly:
 
----
+1.  **Rebuild**:
+    ```bash
+    make clean && make
+    ```
+2.  **Test Mutexes**:
+    *   Run `make run`, select **4**. Input **3** threads.
+    *   Check `http://localhost:9090` -> "Synchronization".
+    *   Verify threads cycle through BLOCKED state.
+3.  **Test I/O**:
+    *   Run `make run`, select **6**.
+    *   In another terminal: `nc localhost 9000` (or whatever port `io_test` uses).
+    *   Check `http://localhost:9090` -> "I/O Integration".
+4.  **Test Scheduler**:
+    *   Run `make run`, select **2**.
+    *   Change tickets of a thread to 1000 vs 1.
+    *   Observe "Pass" value increasing much faster for the high-ticket thread.
 
-## License
-MIT
+## 📂 Project Structure
+*   `src/`: Core library code (`scheduler.c`, `gthread.c`, `io.c`, `dashboard.c`).
+*   `include/`: Header files defining the API.
+*   `examples/`: Demo programs (`stride_test`, `mutex_test`, etc.).
+*   `examples/advanced_static/`: Frontend assets for the Dashboard.
