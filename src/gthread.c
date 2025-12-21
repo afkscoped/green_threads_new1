@@ -28,6 +28,8 @@ void gthread_init(void) {
 
   // Dashboard #2 Global List
   g_main_thread.global_next = NULL;
+  g_main_thread.waiting_fd = -1; // Initialize to no FD
+  g_main_thread.wake_time_ms = 0;
   // We need to export this or have an accessor. Making it extern for now in
   // header? Or just a static here and an accessor function? Accessor is
   // cleaner. I will add a helper to iterate or get head.
@@ -76,6 +78,7 @@ int gthread_create(gthread_t **t, void (*fn)(void *), void *arg) {
 
   // Add to global list
   thread->global_next = g_all_threads;
+  thread->waiting_fd = -1; // Initialize to no FD
   g_all_threads = thread;
 
   // Setup Context
