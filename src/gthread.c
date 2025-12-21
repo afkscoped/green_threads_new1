@@ -6,7 +6,6 @@
 #include <string.h>
 #include <sys/mman.h>
 
-
 #define DEFAULT_STACK_SIZE (64 * 1024)
 
 extern void gthread_trampoline(void);
@@ -23,10 +22,22 @@ void gthread_init(void) {
   g_main_thread.tickets = 10;
   g_main_thread.stride = 10000 / 10;
   g_main_thread.pass = 0;
+  g_main_thread.pass = 0;
   g_main_thread.monitor_id = monitor_register("MAIN");
   monitor_update_state(g_main_thread.monitor_id, TASK_RUNNABLE);
+
+  // Dashboard #2 Global List
+  g_main_thread.global_next = NULL;
+  // We need to export this or have an accessor. Making it extern for now in
+  // header? Or just a static here and an accessor function? Accessor is
+  // cleaner. I will add a helper to iterate or get head.
   g_current_thread = &g_main_thread;
 }
+
+// Global list head
+gthread_t *g_all_threads = &g_main_thread;
+
+gthread_t *gthread_get_all_threads(void) { return g_all_threads; }
 
 int gthread_create(gthread_t **t, void (*fn)(void *), void *arg) {
   if (!g_current_thread)
@@ -55,6 +66,10 @@ int gthread_create(gthread_t **t, void (*fn)(void *), void *arg) {
   // Monitor
   thread->monitor_id = monitor_register("GTHREAD");
   monitor_update_state(thread->monitor_id, TASK_RUNNABLE);
+
+  // Add to global list
+  thread->global_next = g_all_threads;
+  g_all_threads = thread;
 
   // Setup Context
   // Stack grows down. Top is stack + size.

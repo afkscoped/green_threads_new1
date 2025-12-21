@@ -15,7 +15,7 @@ OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS_C)) \
 
 # Targets
 TARGET_LIB = libgthread.a
-EXAMPLES = basic_threads stride_test stack_test mutex_test sleep_test io_test http_server matrix_mul runner web_dashboard
+EXAMPLES = basic_threads stride_test stack_test mutex_test sleep_test io_test http_server matrix_mul runner web_dashboard advanced_dashboard
 
 all: $(TARGET_LIB) $(EXAMPLES)
 
@@ -69,6 +69,12 @@ web_dashboard: $(EXAMPLE_DIR)/web_dashboard.c src/monitor.o $(TARGET_LIB)
 	# Ensure static dir exists in build
 	mkdir -p build/examples/web_static
 	cp -r examples/web_static/* build/examples/web_static/ 2>/dev/null || true
+
+advanced_dashboard: $(EXAMPLE_DIR)/advanced_dashboard.c $(TARGET_LIB)
+	$(CC) $(CFLAGS) $< -o build/$@ -L. -lgthread
+	# Ensure static dir exists
+	mkdir -p build/examples/advanced_static
+	cp -r examples/advanced_static/* build/examples/advanced_static/ 2>/dev/null || true
 
 
 clean:

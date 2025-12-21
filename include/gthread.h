@@ -48,11 +48,16 @@ struct gthread {
   struct gthread *join_queue;
   void *retval;
 
+  struct gthread *global_next; /* For global iteration (Dashboard #2) */
+
   // Phase 6: Sleep
   uint64_t wake_time_ms;
 
   // Phase 11: Monitor
   int monitor_id;
+
+  // Phase 13: Dashboard #2
+  int waiting_fd;
 };
 
 /* API */
@@ -61,6 +66,9 @@ void gthread_exit(void);
 void gthread_yield(void);
 int gthread_join(gthread_t *t, void **retval);
 void gthread_sleep(uint64_t ms);
+
+/* Dashboard #2 API */
+gthread_t *gthread_get_all_threads(void);
 
 /* Internal Init (Call once) */
 void gthread_init(void);

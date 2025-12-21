@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Advanced GreenThreads Runtime Control</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="header">
+        <h1>GreenThreads Advanced Runtime Control</h1>
+        <div class="status-indicator" id="connectionStatus">Connected</div>
+    </div>
+
+    <div class="main-container">
+        <!-- Panel 1: Scheduler Control -->
+        <div class="panel">
+            <h2>Stride Scheduler Control</h2>
+            <p>Adjust tickets (priority) dynamically. Higher tickets = More CPU share.</p>
+            <table id="schedulerTable">
+                <thead>
+                    <tr>
+                        <th>TID</th>
+                        <th>State</th>
+                        <th>Tickets (Priority)</th>
+                        <th>Pass (Virtual Time)</th>
+                        <th>Stride</th>
+                        <th>CPU Share Control</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Panel 2: Stack Visualization -->
+        <div class="panel">
+            <h2>Stack Usage Monitor</h2>
+            <div id="stackContainer">
+                <!-- Stack bars populated by JS -->
+            </div>
+        </div>
+
+        <!-- Panel 3: I/O & Metrics -->
+        <div class="panel">
+            <h2>Runtime Metrics & I/O</h2>
+            <div class="metrics-grid">
+                <div class="metric-box">
+                    <h3>Waiting I/O</h3>
+                    <div id="ioList">None</div>
+                </div>
+                <div class="metric-box">
+                    <h3>Global Stats</h3>
+                    <ul id="globalStats">
+                        <li>Runnable: <span id="statRunnable">0</span></li>
+                        <li>Sleeping: <span id="statSleep">0</span></li>
+                        <li>Waiting: <span id="statWait">0</span></li>
+                        <li>Context Switches: <span id="statCtx">N/A</span></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+
+</html>

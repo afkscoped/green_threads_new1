@@ -154,6 +154,7 @@ void scheduler_register_io_wait(int fd, int events) {
 
   poll_threads[poll_count] = g_current_thread;
   g_current_thread->state = GTHREAD_BLOCKED;
+  g_current_thread->waiting_fd = fd; // Phase 13
 
   poll_count++;
   scheduler_schedule();
@@ -172,6 +173,7 @@ static void check_io(int timeout_ms) {
     for (int i = 0; i < poll_count; i++) {
       if (poll_fds[i].revents) {
         gthread_t *t = poll_threads[i];
+        t->waiting_fd = -1; // Phase 13
         scheduler_enqueue(t);
 
         // Remove
