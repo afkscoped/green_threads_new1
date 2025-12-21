@@ -39,6 +39,13 @@ gthread_t *g_all_threads = &g_main_thread;
 
 gthread_t *gthread_get_all_threads(void) { return g_all_threads; }
 
+/* Get current thread ID */
+uint64_t gthread_get_id(void) {
+  if (g_current_thread)
+    return g_current_thread->id;
+  return 0;
+}
+
 int gthread_create(gthread_t **t, void (*fn)(void *), void *arg) {
   if (!g_current_thread)
     gthread_init();

@@ -1,43 +1,37 @@
+#include "dashboard.h"
 #include "gthread.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
-#include <unistd.h>
 
 
-// Helper to get time
-static uint64_t get_time_ms(void) {
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (uint64_t)(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
-}
-
-void sleep_worker(void *arg) {
-  long id = (long)arg;
-  uint64_t sleep_time = id * 500; // 500, 1000, 1500 ms
-
-  printf("Thread %ld starting. Sleeping for %lu ms\n", id, sleep_time);
-
-  uint64_t start = get_time_ms();
-  gthread_sleep(sleep_time);
-  uint64_t end = get_time_ms();
-
-  printf("Thread %ld woke up. Delta: %lu ms\n", id, end - start);
+void sleep_task(void *arg) {
+  long ms = (long)arg;
+  printf("Thread %lu sleeping for %ld ms...\n", gthread_get_id(), ms);
+  gthread_sleep(ms);
+  printf("Thread %lu woke up!\n", gthread_get_id());
 }
 
 int main(void) {
   gthread_init();
+  dashboard_start(9090);
 
-  gthread_t *t1, *t2, *t3;
-  gthread_create(&t1, sleep_worker, (void *)1);
-  gthread_create(&t2, sleep_worker, (void *)2);
-  gthread_create(&t3, sleep_worker, (void *)3);
+  printf("=== Sleep/Timer Demo (Interactive) ===\n");
+  printf("Open http://localhost:9090 to see thread states change (RUNNING -> "
+         "SLEEPING -> RUNNABLE)\n");
 
-  printf("Main: created 3 threads.\n");
+  int count;
+  printf("Enter number of sleep threads: ");
+  scanf("%d", &count);
 
-  gthread_join(t1, NULL);
-  gthread_join(t2, NULL);
-  gthread_join(t3, NULL);
+  for (int i = 0; i < count; i++) {
+    long ms = (rand() % 5000) + 1000; // 1-6s
+    gthread_t *t;
+    gthread_create(&t, sleep_task, (void *)ms);
+  }
 
-  printf("Main: All done.\n");
+  while (1) {
+    gthread_yield();
+  }
   return 0;
 }

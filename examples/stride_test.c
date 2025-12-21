@@ -1,65 +1,66 @@
+#include "dashboard.h"
 #include "gthread.h"
+#include "runtime_stats.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 
-// We can't easily modify tickets via public API yet, let's access struct hack
-// or add API For now, I will add a helper in this file to modify tickets if
-// headers allow, OR I should update gthread.h to expose ticket setting.
-
-// Let's add gthread_set_tickets to gthread.c / gthread.h
-// But for now, since we have the struct definition, we can cast.
-
-void thread_func(void *arg) {
+void cpu_task(void *arg) {
   long id = (long)arg;
-  // We want to see how many times each runs
-  for (int i = 0; i < 5; i++) {
-    printf("Thread %ld (tickets via hack) running\n", id);
+
+  // Simulate CPU work
+  for (int i = 0; i < 200; i++) {
     gthread_yield();
+    // Simulate some extensive work to make it visible
+    volatile int x = 0;
+    for (int j = 0; j < 10000; j++)
+      x++;
   }
+  printf("Thread %ld done.\n", id);
 }
 
 int main(void) {
   gthread_init();
 
-  gthread_t *t1, *t2;
-  gthread_create(&t1, thread_func, (void *)1);
-  gthread_create(&t2, thread_func, (void *)2);
+  printf("=== Stride Scheduling Demo (Interactive) ===\n");
+  printf("This demo visualizes Stride Scheduling with Stacks & CPU usage.\n");
+  printf("Open http://localhost:9090 to see the Advanced Dashboard.\n\n");
 
-  // Hack: Set tickets
-  // t1: 100 tickets -> Stride 100
-  // t2: 50 tickets -> Stride 200
-  // t1 should run twice as often as t2 ideally, but with yield() it forces
-  // switch. Stride scheduling works best with preemption or CPU intensive
-  // tasks. With strict yield(), it will follow pass order.
+  int num_threads = 3;
+  printf("Enter number of threads (e.g. 3): ");
+  scanf("%d", &num_threads);
+  if (num_threads < 1)
+    num_threads = 1;
 
-  // Let's manually set tickets (assuming we can access fields if we include
-  // internal headers or just cast) Since gthread.h exposes the struct, we can
-  // validly do:
-  t1->tickets = 100;
-  t1->stride = 10000 / 100; // 100
-  t1->pass = 0;
+  printf("Starting Dashboard on port 9090...\n");
+  dashboard_start(9090);
 
-  t2->tickets = 50;
-  t2->stride = 10000 / 50; // 200
-  t2->pass = 0;
+  printf("Creating %d threads with different tickets.\n", num_threads);
 
-  printf("Created T1 (Tickets=100) and T2 (Tickets=50)\n");
+  for (int i = 0; i < num_threads; i++) {
+    gthread_t *t;
+    gthread_create(&t, cpu_task, (void *)(long)(i + 1));
 
-  // Run
-  // T1 (0), T2 (0) -> Pick T1. T1 Pass -> 100. Stack: T2 (0), T1 (100)
-  // User yields -> Pick T2. T2 Pass -> 200. Stack: T1 (100), T2 (200)
-  // Pick T1. T1 Pass -> 200. Stack: T2 (200), T1 (200)
-  // Pick T2 (tie break? FIFO? My heap doesn't guarantee stability but usually
-  // top).
+    int tix = 100 - (i * 20); // 100, 80, 60...
+    if (tix < 10)
+      tix = 10;
 
+    printf("Thread %d: Tickets set to %d\n", i + 1, tix);
+    runtime_set_tickets(t->id, tix);
+  }
+
+  printf("\nRunning... Press Ctrl+C to stop or wait for threads.\n");
+  printf("Go to http://localhost:9090 to dynamically change tickets!\n");
+
+  // Keep main thread alive for dashboard
   while (1) {
     gthread_yield();
-    // Break when threads done? We don't have is_done check exposed easily.
-    // Validation check: Just run for a loop
-    static int loops = 0;
-    if (loops++ > 20)
-      break;
+    struct timespec ts = {0, 100000000}; // 100ms
+    nanosleep(&ts, NULL);
+
+    // Check if all threads done?
+    // For now, let it run indefinitely so user can play with dashboard
   }
 
   return 0;

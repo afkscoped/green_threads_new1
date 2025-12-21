@@ -69,6 +69,7 @@ void gthread_sleep(uint64_t ms);
 
 /* Dashboard #2 API */
 gthread_t *gthread_get_all_threads(void);
+uint64_t gthread_get_id(void);
 
 /* Internal Init (Call once) */
 void gthread_init(void);
