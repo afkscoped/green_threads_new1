@@ -16,8 +16,7 @@
 
 #define JSON_BUF_SIZE 131072
 
-// Static buffer to avoid large stack allocation
-static char json_buf[JSON_BUF_SIZE];
+// Removed static json_buf
 
 // Serve static files
 static void serve_static(int client_fd, const char *path, const char *type) {
@@ -69,6 +68,10 @@ static void serve_static(int client_fd, const char *path, const char *type) {
 
 // JSON Handler
 static void handle_threads(int fd) {
+  char *json_buf = malloc(JSON_BUF_SIZE);
+  if (!json_buf)
+    return;
+
   int offset = 0;
   json_buf[offset++] = '[';
 
@@ -76,7 +79,7 @@ static void handle_threads(int fd) {
   int first = 1;
   int items = 0;
 
-  while (curr && items < 500) { // Limit items to prevent overflow/starvation
+  while (curr && items < 500) {
     if (!first) {
       if (offset >= JSON_BUF_SIZE - 200)
         break;
@@ -85,6 +88,9 @@ static void handle_threads(int fd) {
     first = 0;
 
     stack_stats_t ss = runtime_get_stack_stats(curr->id);
+
+    // Debug print
+    // fprintf(stderr, "[DEBUG] Processing Thread %lu\n", curr->id);
 
     offset += snprintf(json_buf + offset, JSON_BUF_SIZE - offset,
                        "{\"id\":%lu,\"tickets\":%d,\"pass\":%lu,\"state\":%d,"
@@ -112,6 +118,8 @@ static void handle_threads(int fd) {
       offset);
   gthread_write(fd, hdr, strlen(hdr));
   gthread_write(fd, json_buf, offset);
+
+  free(json_buf);
 }
 
 static void handle_client(void *arg) {
@@ -198,6 +206,7 @@ static void dashboard_server_task(void *arg) {
 
   // Set non-blocking
   int flags = fcntl(server_fd, F_GETFL, 0);
+
   fcntl(server_fd, F_SETFL, flags | O_NONBLOCK);
 
   while (1) {

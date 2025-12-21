@@ -148,8 +148,13 @@ static gthread_t *poll_threads[MAX_POLL_FDS];
 static int poll_count = 0;
 
 void scheduler_register_io_wait(int fd, int events) {
-  if (poll_count >= MAX_POLL_FDS)
+  if (poll_count >= MAX_POLL_FDS) {
+    fprintf(stderr, "[DEBUG] MAX_POLL_FDS reached!\n");
     return;
+  }
+
+  // printf("[DEBUG] Register IO: fd=%d count=%d thread=%lu\n", fd, poll_count,
+  // g_current_thread->id);
 
   poll_fds[poll_count].fd = fd;
   poll_fds[poll_count].events = events;
@@ -157,7 +162,7 @@ void scheduler_register_io_wait(int fd, int events) {
 
   poll_threads[poll_count] = g_current_thread;
   g_current_thread->state = GTHREAD_BLOCKED;
-  g_current_thread->waiting_fd = fd; // Phase 13
+  g_current_thread->waiting_fd = fd;
 
   poll_count++;
   scheduler_schedule();
