@@ -14,7 +14,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-
 #define JSON_BUF_SIZE 131072
 
 // Static buffer to avoid large stack allocation
@@ -87,13 +86,14 @@ static void handle_threads(int fd) {
 
     stack_stats_t ss = runtime_get_stack_stats(curr->id);
 
-    offset +=
-        snprintf(json_buf + offset, JSON_BUF_SIZE - offset,
-                 "{\"id\":%lu,\"tickets\":%d,\"pass\":%lu,\"state\":%d,"
-                 "\"stride\":%lu,\"stack_used\":%zu,\"waiting_fd\":%d}",
-                 (unsigned long)curr->id, curr->tickets,
-                 (unsigned long)curr->pass, curr->state,
-                 (unsigned long)curr->stride, ss.stack_used, curr->waiting_fd);
+    offset += snprintf(json_buf + offset, JSON_BUF_SIZE - offset,
+                       "{\"id\":%lu,\"tickets\":%d,\"pass\":%lu,\"state\":%d,"
+                       "\"stride\":%lu,\"stack_used\":%zu,\"waiting_fd\":%d,"
+                       "\"wake_time\":%lu}",
+                       (unsigned long)curr->id, curr->tickets,
+                       (unsigned long)curr->pass, curr->state,
+                       (unsigned long)curr->stride, ss.stack_used,
+                       curr->waiting_fd, (unsigned long)curr->wake_time_ms);
 
     curr = curr->global_next;
     items++;

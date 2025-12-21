@@ -1,82 +1,61 @@
+#include "dashboard.h"
 #include "gthread.h"
 #include "sync.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 
 
-#define BUFFER_SIZE 5
-#define ITEMS_TO_PRODUCE 20
-
-int buffer[BUFFER_SIZE];
-int count = 0;
-int in = 0;
-int out = 0;
-
 gmutex_t mutex;
-gcond_t cond_full;  // Wait if full
-gcond_t cond_empty; // Wait if empty
+int shared_resource = 0;
 
-void producer(void *arg) {
+void worker(void *arg) {
   long id = (long)arg;
-  for (int i = 0; i < ITEMS_TO_PRODUCE; i++) {
+  for (int i = 0; i < 1000; i++) {
     gmutex_lock(&mutex);
-    while (count == BUFFER_SIZE) {
-      // Buffer full, wait
-      gcond_wait(&cond_full, &mutex);
-    }
 
-    buffer[in] = i;
-    in = (in + 1) % BUFFER_SIZE;
-    count++;
-    printf("Producer %ld produced %d (Count: %d)\n", id, i, count);
-
-    gcond_signal(&cond_empty);
-    gmutex_unlock(&mutex);
-
+    // Critical Section
+    int temp = shared_resource;
     // Simulate work
-    if (i % 3 == 0)
-      gthread_yield();
-  }
-  printf("Producer finished\n");
-}
+    for (volatile int k = 0; k < 100; k++)
+      ;
+    shared_resource = temp + 1;
 
-void consumer(void *arg) {
-  long id = (long)arg;
-  for (int i = 0; i < ITEMS_TO_PRODUCE; i++) {
-    gmutex_lock(&mutex);
-    while (count == 0) {
-      // Buffer empty, wait
-      gcond_wait(&cond_empty, &mutex);
-    }
-
-    int item = buffer[out];
-    out = (out + 1) % BUFFER_SIZE;
-    count--;
-    printf("Consumer %ld consumed %d (Count: %d)\n", id, item, count);
-
-    gcond_signal(&cond_full);
     gmutex_unlock(&mutex);
 
-    if (i % 4 == 0)
+    if (i % 100 == 0)
       gthread_yield();
   }
-  printf("Consumer finished\n");
+  printf("Thread %ld done.\n", id);
 }
 
 int main(void) {
   gthread_init();
-
   gmutex_init(&mutex);
-  gcond_init(&cond_full);
-  gcond_init(&cond_empty);
+  dashboard_start(9090);
 
-  gthread_t *prod, *cons;
-  gthread_create(&prod, producer, (void *)1);
-  gthread_create(&cons, consumer, (void *)1);
+  printf("=== Mutex Synchronization Demo (Interactive) ===\n");
+  printf("Visualizes locking/blocking. Open http://localhost:9090\n");
+  printf("Look at the 'Synchronization' section on dashboard.\n");
 
-  gthread_join(prod, NULL);
-  gthread_join(cons, NULL);
+  int num_threads;
+  printf("Enter number of threads: ");
+  if (scanf("%d", &num_threads) != 1)
+    num_threads = 2; // Default if fail
+  if (num_threads < 1)
+    num_threads = 2;
 
-  printf("Main: All threads joined. Exiting.\n");
+  for (long i = 0; i < num_threads; i++) {
+    gthread_t *t;
+    gthread_create(&t, worker, (void *)(long)(i + 1));
+  }
+
+  printf("Threads launched. Check dashboard for BLOCKED (red) threads waiting "
+         "for Mutex.\n");
+
+  while (1) {
+    gthread_yield();
+    sleep(1);
+  }
   return 0;
 }

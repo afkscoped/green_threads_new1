@@ -87,8 +87,11 @@ static void free_zombie(void) {
   if (g_zombie_thread) {
     if (g_zombie_thread->stack) {
       free(g_zombie_thread->stack);
+      g_zombie_thread->stack = NULL;
     }
-    free(g_zombie_thread);
+    // We DO NOT free the struct because it is part of the global list used by
+    // Dashboard. In a real system we would unlink it safely.
+    // free(g_zombie_thread);
     g_zombie_thread = NULL;
   }
 }

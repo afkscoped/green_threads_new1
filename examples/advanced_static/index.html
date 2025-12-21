@@ -3,65 +3,87 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Advanced GreenThreads Runtime Control</title>
+    <title>GreenThreads Advanced Runtime</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        .section-header {
+            margin-top: 0;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #ddd;
+        }
+
+        .panel {
+            margin-bottom: 20px;
+        }
+
+        .sub-panel {
+            border: 1px solid #eee;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            background: #fafafa;
+        }
+    </style>
 </head>
 
 <body>
     <div class="header">
-        <h1>GreenThreads Advanced Runtime Control</h1>
-        <div class="status-indicator" id="connectionStatus">Connected</div>
+        <h1>GreenThreads Runtime Control</h1>
+        <div class="status-indicator" id="connectionStatus">Connecting...</div>
     </div>
 
     <div class="main-container">
-        <!-- Panel 1: Scheduler Control -->
-        <div class="panel">
-            <h2>Stride Scheduler Control</h2>
-            <p>Adjust tickets (priority) dynamically. Higher tickets = More CPU share.</p>
+
+        <!-- Feature 1: Stride Scheduling -->
+        <div class="panel" id="stride-section">
+            <h2 class="section-header">1. Stride Scheduling (CPU)</h2>
+            <p>Control thread priority (Tickets). Higher tickets = More CPU share.</p>
             <table id="schedulerTable">
                 <thead>
                     <tr>
                         <th>TID</th>
                         <th>State</th>
-                        <th>Tickets (Priority)</th>
-                        <th>Pass (Virtual Time)</th>
+                        <th>Tickets</th>
+                        <th>Pass</th>
                         <th>Stride</th>
-                        <th>CPU Share Control</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <!-- Populated by JS -->
-                </tbody>
+                <tbody></tbody>
             </table>
         </div>
 
-        <!-- Panel 2: Stack Visualization -->
-        <div class="panel">
-            <h2>Stack Usage Monitor</h2>
-            <div id="stackContainer">
-                <!-- Stack bars populated by JS -->
-            </div>
+        <!-- Feature 2: Stack Management -->
+        <div class="panel" id="stack-section">
+            <h2 class="section-header">2. Stack Management</h2>
+            <div id="stackContainer"></div>
         </div>
 
-        <!-- Panel 3: I/O & Metrics -->
-        <div class="panel">
-            <h2>Runtime Metrics & I/O</h2>
-            <div class="metrics-grid">
-                <div class="metric-box">
-                    <h3>Waiting I/O</h3>
-                    <div id="ioList">None</div>
-                </div>
-                <div class="metric-box">
-                    <h3>Global Stats</h3>
-                    <ul id="globalStats">
-                        <li>Runnable: <span id="statRunnable">0</span></li>
-                        <li>Sleeping: <span id="statSleep">0</span></li>
-                        <li>Waiting: <span id="statWait">0</span></li>
-                        <li>Context Switches: <span id="statCtx">N/A</span></li>
-                    </ul>
-                </div>
-            </div>
+        <!-- Feature 3: Synchronisation -->
+        <div class="panel" id="sync-section">
+            <h2 class="section-header">3. Synchronization (Mutex)</h2>
+            <div id="syncList">No synchronization activity detected.</div>
         </div>
+
+        <!-- Feature 4: Sleep/Timers -->
+        <div class="panel" id="sleep-section">
+            <h2 class="section-header">4. Sleep & Timers</h2>
+            <div id="sleepList">No sleeping threads.</div>
+        </div>
+
+        <!-- Feature 5: I/O Integration -->
+        <div class="panel" id="io-section">
+            <h2 class="section-header">5. I/O Integration</h2>
+            <div id="ioList">No I/O waiting threads.</div>
+        </div>
+
+        <!-- Global Metrics -->
+        <div class="panel">
+            <h2 class="section-header">Global Metrics</h2>
+            <div>Runnable: <span id="statRunnable">0</span> | Sleeping: <span id="statSleep">0</span> | Waiting: <span
+                    id="statWait">0</span></div>
+        </div>
+
     </div>
 
     <script src="dashboard.js"></script>
