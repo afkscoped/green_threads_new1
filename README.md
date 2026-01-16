@@ -1,115 +1,77 @@
-# Green Threads Library
+# GreenThreads++: Research-Grade User-Space Threading Platform
 
-A lightweight, high-performance user-space threading library in C. This project demonstrates the implementation of M:1 cooperative concurrency (Green Threads) from scratch, featuring a custom scheduler, synchronization primitives, async I/O, and a real-time web dashboard.
+GreenThreads++ has been evolved into a comparative analysis platform for researching user-space (Green) vs kernel-space (POSIX) threading models. It features a sophisticated "Dual Runtime" engine capable of executing workloads simultaneously on both models, monitored by the **Adaptive User-Space Runtime Analyzer (AURA)**.
 
-## Features
+## 🔬 Research Capability: AURA
+The **Adaptive User-Space Runtime Analyzer (AURA)** is an embedded subsystem that monitors the runtime health of green threads.
+- **Starvation Detection**: Alerts when tickets/priorities prevent runs > 500ms.
+- **Fairness Analysis**: Calculates Stride deviation.
+- **Auto-Remediation**: Can dynamically boost tickets to resolve starvation.
 
-- **Core Threading**: Custom `gthread_t` structures with heap-allocated stacks (64KB default).
-- **Fast Context Switching**: Assembly-level (`context.S`) switching for minimal overhead.
-- **Stride Scheduler**: Fair, deterministic scheduling using a Min-Heap priority queue. Threads are assigned "tickets" to control their CPU share.
-- **Synchronization**:
-  - `gmutex`: Mutex locks for critical sections.
-  - `gcond`: Condition variables for signaling.
-- **Async I/O System**: Non-blocking `read`/`write`/`accept` wrappers integrated with a system `poll` loop, enabling high-concurrency networking.
-- **Sleep & Timers**: Efficient O(1) sleep queue handling for `gthread_sleep`.
-- **Integrated Web Dashboard**: A real-time monitoring dashboard (port 8080) to visualize thread states, stacks, and scheduling metrics.
-- **Interactive Demos**: Five fully interactive demos showcasing scheduling, memory, sync, and I/O.
+## ⚔️ Dual-Runtime Engine
+Run workloads in three modes:
+1.  **Green Only**: Pure user-space cooperative/preemptive multitasking.
+2.  **Pthread Only**: Kernel-managed 1:1 threading.
+3.  **Dual Mode**: Simultaneous execution for side-by-side performance profiling.
+
+## 📊 Real-Time Observability Stack
+- **Dashboard**: React + Tailwind + Recharts (Updates every 100ms via WebSockets).
+- **Backend Relay**: Node.js WebSocket Bridge.
+- **Metrics Warehouse**: Prometheus (1s resolution) + Grafana.
 
 ---
 
-## Getting Started
+## 🚀 Quick Start (Docker)
 
-### Prerequisites
-- GCC Compiler
-- Make
-- Linux/WSL (Required for strict context switching ABI)
+The easiest way to run the full stack is with Docker Compose.
 
-### Build
-To build the library and all examples:
 ```bash
-make clean && make
+cd docker
+docker-compose up --build
 ```
 
-### Run
-The easiest way to explore is the **Runner**:
+### Access Points
+- **Dashboard**: [http://localhost:80](http://localhost:80) (React UI)
+  - Use the "Spawn" button to create workloads.
+  - Experiment with "Time Slice" and "Tickets" sliders.
+  - "Run Experiment (Ticket Sweep)" will auto-run a stress test.
+- **Prometheus**: [http://localhost:9090](http://localhost:9090)
+- **Grafana**: [http://localhost:3000](http://localhost:3000) (Login: admin/admin)
+  - Go to Dashboards -> Import -> Upload JSON (or use pre-provisioned).
+
+### Architecture
+1.  **C Runtime (`src/`)**: Dual-mode (Green + Pthread) engine with cooperative/preemptive (simulated) scheduling.
+2.  **Node.js Relay (`server/`)**: Bridges WebSocket (UI) to TCP (C App).
+3.  **Frontend (`frontend/`)**: React + Recharts + Tailwind.
+4.  **Observability**: Metrics pushed to Prometheus, analyzed by "Aura" (Anomaly Detection) in real-time.
+
+### Deployment & Testing
+- **Experiment Mode**: Click "Run Experiment (Ticket Sweep)" in the UI to automatically vary thread priority and observe context switch rates.
+- **Logs**: Check `docker-compose logs -f app` to see AURA anomaly alerts (e.g. Starvation Detected).
+
+### 3. Run a Comparative Workload
+From the Dashboard or CLI, spawn a matrix multiplication task:
 ```bash
-./build/runner
+# Example Command via CLI (future extension) or Dashboard Button
+spawn:matrix:50
 ```
-This interactive menu allows you to launch all demos and the web dashboard.
+Watch the "Green" vs "Pthread" counters race in real-time.
 
 ---
 
-## Interactive Demos
+## 📂 Architecture
 
-All demos now feature **Startup Configuration**, allowing you to set parameters before execution.
-
-### 1. Stride Scheduling Test (Runner Option 2)
-Tests the fairness of the scheduler.
-- **Input**: Number of threads, and "Tickets" for each thread.
-- **Behavior**: Threads with more tickets get more CPU time.
-- **Output**: Prints progress every 10% of workload.
-
-### 2. Stack Management (Runner Option 3)
-Tests deep recursion handling.
-- **Input**: Recursion depth (e.g., 40 for approx 40KB stack).
-- **Behavior**: Spawns a thread that eats stack space to verify safety limits.
-
-### 3. Synchronization (Runner Option 4)
-Tests Mutex and Condition Variables (Producer-Consumer).
-- **Input**: Number of Producers and Consumers.
-- **Behavior**: Threads contend for a shared buffer, locking/unlocking and signaling safely.
-
-### 4. Sleep/Timers (Runner Option 5)
-Tests the sleep queue accuracy.
-- **Input**: Sleep duration (ms) for varying threads.
-- **Behavior**: Threads sleep efficiently without blocking the scheduler and wake up on time.
-
-### 5. I/O Scalability (Runner Option 6)
-Stress tests the Async I/O reactor.
-- **Input**: Number of concurrent clients (e.g., 100).
-- **Behavior**: Spawns N clients that connect to a Green Thread server, exchange data, and disconnect.
-
----
-
-## Web Dashboard
-
-The project includes a visualization tool.
-1. Run **Option 9** from the runner (or `./build/web_dashboard`).
-2. Open `http://localhost:8080` in your browser.
-3. You will see a table of live threads with metrics:
-   - **ID**: Thread ID.
-   - **State**: RUNNING, READY, BLOCKED, DONE.
-   - **Tickets**: Priority weight.
-   - **Stack Used**: Current stack memory usage.
-   - **Wait Time**: Next wake-up time (if sleeping).
-
----
-
-## Project Structure
-
-```text
-.
-├── src/
-│   ├── gthread.c       # Core thread creation/init
-│   ├── scheduler.c     # Stride scheduler & Min-heap
-│   ├── context.S       # Assembly context switch
-│   ├── sync.c          # Mutex & Condition vars
-│   ├── io.c            # Async I/O wrappers & Poll
-│   └── dashboard.c     # Web server for metrics
-├── include/            # Public headers
-├── examples/           # Demo applications
-│   ├── runner.c        # Main menu
-│   ├── stride_test.c   # Scheduling fairnes demo
-│   └── ...
-└── Makefile            # Build system
+```
+[ Frontend (React) ] <==> [ WebSocket Relay ] <==> [ C Runtime (TCP Output) ]
+                                                         |
+                                         +---------------+---------------+
+                                         |                               |
+                                  [ Green Scheduler ]            [ Pthread Pool ]
+                                         |                               |
+                                  [ AURA Analyzer ]              [ OS Kernel ]
 ```
 
-## Architecture Notes
-
-- **M:1 Model**: All green threads run on a single OS thread. This eliminates race conditions on global CPU data but means blocking system calls (like `scanf`) block *all* threads. We solve this by using non-blocking I/O wrappers.
-- **Stride Scheduling**: We use a `pass` value that increments by `stride` (inverse of tickets). The thread with the lowest `pass` is always picked next.
-- **Stack Safety**: Stacks are `malloc`'d. Infinite recursion will overflow the allocated heap block (64KB), potentially crashing the program (Guard pages are planned).
-
----
-
-*Authored by Antigravity Agent*
+## 🛠️ Development
+- **New Workloads**: Add to `src/workloads.c`.
+- **AURA Logic**: Modify `src/aura.c`.
+- **Metrics**: Define new counters in `src/metrics.h`.
