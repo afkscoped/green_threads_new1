@@ -1,0 +1,70 @@
+services:
+  app:
+    container_name: app
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.app
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    networks:
+      - green_net
+
+  frontend:
+    container_name: frontend
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - app
+    networks:
+      - green_net
+
+  server:
+    container_name: server
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.server
+    ports:
+      - "3001:3001"
+    depends_on:
+      - app
+    networks:
+      - green_net
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - green_net
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+    volumes:
+      # Use a named volume for persistence, or remove this line to reset on restart
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - green_net
+
+volumes:
+  grafana_data:
+
+
+networks:
+  green_net:
+    driver: bridge

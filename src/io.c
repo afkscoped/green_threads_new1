@@ -68,3 +68,8 @@ int gthread_accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
     return fd;
   }
 }
+
+void gthread_wait_io(int fd, int events) {
+  scheduler_register_io_wait(fd, events);
+  gthread_yield();
+}

@@ -1,61 +1,51 @@
-#include "dashboard.h"
 #include "gthread.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-
-void recursive_task(void *arg) {
-  long depth = (long)arg;
-  char buffer[1024]; // Consume 1KB stack per frame
-
-  // Touch buffer to ensure allocation
-  buffer[0] = (char)depth;
-
-  gthread_yield();
-  struct timespec ts = {0, 50000000}; // 50ms slow down
-  nanosleep(&ts, NULL);
+// Recursive function to eat stack
+void deep_recursion(int depth) {
+  char buffer[1024];                  // 1KB per frame
+  sprintf(buffer, "Depth %d", depth); // Use it to prevent optimization
 
   if (depth > 0) {
-    // printf("Thread %lu at depth %ld (Stack ~%ld KB)\n", gthread_get_id(),
-    // depth, (64 - depth));
-    recursive_task((void *)(depth - 1));
-  } else {
-    printf("Thread %lu reached max depth!\n", gthread_get_id());
-    // Hold at max depth to show on dashboard
-    for (int i = 0; i < 100; i++) {
+    if (depth % 10 == 0) {
+      printf("Stack test: Depth %d\n", depth);
       gthread_yield();
-      nanosleep(&ts, NULL);
     }
+    deep_recursion(depth - 1);
+  } else {
+    printf("Reached max depth!\n");
   }
+}
+
+void thread_func(void *arg) {
+  long depth = (long)arg;
+  printf("Thread starting recursion to depth %ld...\n", depth);
+  deep_recursion((int)depth);
+  printf("Thread finished recursion\n");
 }
 
 int main(void) {
   gthread_init();
 
-  printf("=== Stack Management Demo (Interactive) ===\n");
-  printf("Visualizes stack growth. Open http://localhost:9090/ \n");
-
-  dashboard_start(9090);
-
   int depth;
-  printf("Enter recursion depth (1KB per frame, max ~60): ");
-  scanf("%d", &depth);
+  printf("Enter recursion depth (1-60): ");
+  if (scanf("%d", &depth) != 1)
+    depth = 20;
   if (depth < 1)
     depth = 1;
-  if (depth > 62) {
-    printf("Warning: Depth > 62 might overflow default 64KB stack.\n");
+  if (depth > 60) {
+    printf("Warning: Depth > 60 might overflow 64KB stack.\n");
   }
 
   gthread_t *t;
-  gthread_create(&t, recursive_task, (void *)(long)depth);
-
-  printf(
-      "Thread created. Watch the 'Stack Usage' bar turn RED on dashboard!\n");
+  gthread_create(&t, thread_func, (void *)(long)depth);
 
   while (1) {
     gthread_yield();
-    sleep(1);
+    // Exit if thread done? accessing t->state is racy/hard from here without
+    // helper Just run forever for demo
   }
   return 0;
 }

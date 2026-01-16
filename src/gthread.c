@@ -13,12 +13,7 @@ extern void gthread_switch(gthread_ctx_t *new_ctx, gthread_ctx_t *old_ctx);
 
 static uint64_t next_tid = 1;
 
-#include <signal.h>
-
 void gthread_init(void) {
-  // Ignore SIGPIPE to prevent crash on closed sockets
-  signal(SIGPIPE, SIG_IGN);
-
   monitor_init();
   // Initialize main thread
   g_main_thread.id = 0;
@@ -33,8 +28,6 @@ void gthread_init(void) {
 
   // Dashboard #2 Global List
   g_main_thread.global_next = NULL;
-  g_main_thread.waiting_fd = -1; // Initialize to no FD
-  g_main_thread.wake_time_ms = 0;
   // We need to export this or have an accessor. Making it extern for now in
   // header? Or just a static here and an accessor function? Accessor is
   // cleaner. I will add a helper to iterate or get head.
@@ -46,13 +39,6 @@ gthread_t *g_all_threads = &g_main_thread;
 
 gthread_t *gthread_get_all_threads(void) { return g_all_threads; }
 
-/* Get current thread ID */
-uint64_t gthread_get_id(void) {
-  if (g_current_thread)
-    return g_current_thread->id;
-  return 0;
-}
-
 int gthread_create(gthread_t **t, void (*fn)(void *), void *arg) {
   if (!g_current_thread)
     gthread_init();
@@ -60,6 +46,7 @@ int gthread_create(gthread_t **t, void (*fn)(void *), void *arg) {
   gthread_t *thread = (gthread_t *)malloc(sizeof(gthread_t));
   if (!thread)
     return -1;
+  memset(thread, 0, sizeof(gthread_t));
 
   // Allocate stack
   thread->stack_size = DEFAULT_STACK_SIZE;
@@ -76,6 +63,7 @@ int gthread_create(gthread_t **t, void (*fn)(void *), void *arg) {
   thread->tickets = 10; // Default tickets
   thread->pass = 0;
   thread->stride = 10000; // arbitrary constant / tickets
+  thread->waiting_fd = -1;
 
   // Monitor
   thread->monitor_id = monitor_register("GTHREAD");
@@ -83,7 +71,6 @@ int gthread_create(gthread_t **t, void (*fn)(void *), void *arg) {
 
   // Add to global list
   thread->global_next = g_all_threads;
-  thread->waiting_fd = -1; // Initialize to no FD
   g_all_threads = thread;
 
   // Setup Context
@@ -177,4 +164,8 @@ void gthread_sleep(uint64_t ms) {
 
   monitor_update_state(cur->monitor_id, TASK_RUNNABLE);
   monitor_set_wake(cur->monitor_id, -1);
+}
+
+uint64_t gthread_self_id(void) {
+  return g_current_thread ? g_current_thread->id : 0;
 }

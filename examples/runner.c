@@ -5,15 +5,15 @@
 void print_menu(void) {
   printf("\n=== Green Threads Demo Runner ===\n");
   printf("1. Basic Threads\n");
-  printf("2. Stride Scheduling (Interactive + Dashboard)\n");
-  printf("3. Stack Management (Interactive + Dashboard)\n");
+  printf("2. Stride Scheduling (Fairness)\n");
+  printf("3. Stack Management (Recursion)\n");
   printf("4. Synchronization (Mutex/Cond)\n");
-  printf("5. Sleep/Timers (Interactive + Dashboard)\n");
-  printf("6. IO Integration (Interactive + Dashboard)\n");
+  printf("5. Sleep/Timers\n");
+  printf("6. IO Integration (Echo)\n");
   printf("7. HTTP Server (Port 8080)\n");
   printf("8. Parallel Matrix Multiplication\n");
   printf("9. Web Dashboard (Port 8080)\n");
-  printf("10. Advanced Dashboard (Standalone :9090)\n");
+  printf("10. Advanced Dashboard (Port 9090)\n");
   printf("0. Exit\n");
   printf("Select demo: ");
 }
@@ -51,11 +51,12 @@ int main(void) {
       system("./build/matrix_mul");
       break;
     case 9:
-      printf("Starting Web Dashboard... Press Ctrl+C to stop.\n");
+      printf("Starting Web Dashboard (Port 8080)... Press Ctrl+C to stop.\n");
       system("./build/web_dashboard");
       break;
     case 10:
-      printf("Starting Advanced Dashboard... Press Ctrl+C to stop.\n");
+      printf(
+          "Starting Advanced Dashboard (Port 9090)... Press Ctrl+C to stop.\n");
       system("./build/advanced_dashboard");
       break;
     case 0:

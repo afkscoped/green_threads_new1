@@ -87,11 +87,8 @@ static void free_zombie(void) {
   if (g_zombie_thread) {
     if (g_zombie_thread->stack) {
       free(g_zombie_thread->stack);
-      g_zombie_thread->stack = NULL;
     }
-    // We DO NOT free the struct because it is part of the global list used by
-    // Dashboard. In a real system we would unlink it safely.
-    // free(g_zombie_thread);
+    free(g_zombie_thread);
     g_zombie_thread = NULL;
   }
 }
@@ -148,13 +145,8 @@ static gthread_t *poll_threads[MAX_POLL_FDS];
 static int poll_count = 0;
 
 void scheduler_register_io_wait(int fd, int events) {
-  if (poll_count >= MAX_POLL_FDS) {
-    fprintf(stderr, "[DEBUG] MAX_POLL_FDS reached!\n");
+  if (poll_count >= MAX_POLL_FDS)
     return;
-  }
-
-  // printf("[DEBUG] Register IO: fd=%d count=%d thread=%lu\n", fd, poll_count,
-  // g_current_thread->id);
 
   poll_fds[poll_count].fd = fd;
   poll_fds[poll_count].events = events;
@@ -162,7 +154,7 @@ void scheduler_register_io_wait(int fd, int events) {
 
   poll_threads[poll_count] = g_current_thread;
   g_current_thread->state = GTHREAD_BLOCKED;
-  g_current_thread->waiting_fd = fd;
+  g_current_thread->waiting_fd = fd; // Phase 13
 
   poll_count++;
   scheduler_schedule();

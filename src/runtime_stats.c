@@ -14,14 +14,12 @@ stack_stats_t runtime_get_stack_stats(int tid) {
   gthread_t *curr = gthread_get_all_threads();
   while (curr) {
     if (curr->id == (uint64_t)tid) {
-      if (curr->state == GTHREAD_TERMINATED) {
-        // Don't touch terminated thread stacks, they might be freed
-        break;
-      }
       stats.tid = tid;
       stats.stack_size = curr->stack_size;
 
       // Calculate usage
+      // Stack grows down from (stack + stack_size)
+      // Current SP is in ctx.rsp OR if running, we approximate
       uint64_t rsp = curr->ctx.rsp;
       if (curr == g_current_thread) {
         // Approximate for running thread
@@ -30,16 +28,16 @@ stack_stats_t runtime_get_stack_stats(int tid) {
       }
 
       // If stack is NULL (main thread might be), handle it
-      if (curr->stack && stats.stack_size > 0) {
-        uint64_t low_addr = (uint64_t)curr->stack;
-        uint64_t high_addr = low_addr + curr->stack_size;
-
-        // Sanity check RSP
-        if (rsp >= low_addr && rsp <= high_addr) {
+      if (curr->stack) {
+        uint64_t high_addr = (uint64_t)curr->stack + curr->stack_size;
+        // Basic range check to prevent underflow wrap-around
+        if (rsp >= (uint64_t)curr->stack && rsp <= high_addr) {
           stats.stack_used = high_addr - rsp;
+          if (stats.stack_used > curr->stack_size)
+            stats.stack_used = curr->stack_size; // Cap it
           stats.stack_remaining = curr->stack_size - stats.stack_used;
         } else {
-          // RSP invalid or outside bounds, maybe recent switch
+          // Invalid SP (maybe thread barely started or context not saved?)
           stats.stack_used = 0;
         }
       } else {

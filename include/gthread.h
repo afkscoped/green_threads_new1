@@ -66,10 +66,10 @@ void gthread_exit(void);
 void gthread_yield(void);
 int gthread_join(gthread_t *t, void **retval);
 void gthread_sleep(uint64_t ms);
+uint64_t gthread_self_id(void);
 
 /* Dashboard #2 API */
 gthread_t *gthread_get_all_threads(void);
-uint64_t gthread_get_id(void);
 
 /* Internal Init (Call once) */
 void gthread_init(void);
